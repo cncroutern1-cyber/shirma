@@ -6,7 +6,7 @@
 //   ORDER_EMAIL     - optional, where to send (default: cncroutern1@gmail.com)
 //   MAIL_FROM       - optional, default "Revo sayt <onboarding@resend.dev>"
 // TELEGRAM (optional, extra copy):
-//   TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID
+//   TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID (one id, or several separated by commas: "123,456,-100789")
 // A message counts as delivered when at least one configured channel accepts it.
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
@@ -55,9 +55,17 @@ export default async function handler(req, res) {
 
   const jobs = [];
   if (useMail) jobs.push(sendMail(mailKey, subject, text, image, phone));
-  if (useTg) jobs.push(sendTelegram(tgToken, tgChat, text.slice(0, 1000), image));
+  if (useTg) {
+    // TELEGRAM_CHAT_ID may hold several ids separated by commas: every one receives the order.
+    const chats = tgChat.split(/[,\s]+/).filter(Boolean);
+    chats.forEach((c) => jobs.push(sendTelegram(tgToken, c, text.slice(0, 1000), image)));
+  }
   const results = await Promise.all(jobs.map((p) => p.catch((e) => "network: " + (e && e.message))));
-  if (results.some((x) => x === true)) return res.status(200).json({ ok: true });
+  if (results.some((x) => x === true)) {
+    const bad = results.filter((x) => typeof x === "string");
+    if (bad.length) console.error("partial delivery:", bad.join(" | "));
+    return res.status(200).json({ ok: true });
+  }
   const detail = results.filter((x) => typeof x === "string");
   console.error("delivery failed:", detail.join(" | "));
   return res.status(502).json({ ok: false, error: "delivery", detail });
