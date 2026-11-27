@@ -1,6 +1,9 @@
 # Revo — sayt
-Statik sayt (`index.html`) + Telegram uchun `api/telegram.js`.
-Vercel'da Environment Variables: TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID. Build sozlamasi kerak emas.
+Statik sayt (`index.html`) + buyurtmalarni yuboruvchi `api/telegram.js` (email va/yoki Telegram).
+Vercel'da Environment Variables:
+- Email: `RESEND_API_KEY` (resend.com, ro‘yxatdan o‘tgan email bilan), ixtiyoriy `ORDER_EMAIL` (standart: cncroutern1@gmail.com)
+- Telegram (ixtiyoriy): `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`
+Build sozlamasi kerak emas.
 
 ## Admin (mahsulotlarni boshqarish)
 1. Supabase: Authentication → Users → Add user `admin@revo-sayt.uz` (parol o'zingizniki, Auto Confirm yoqilgan).
