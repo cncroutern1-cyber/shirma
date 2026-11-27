@@ -56,6 +56,9 @@ nav a:hover{color:var(--ink)}nav a[aria-current="page"]{color:var(--ink);border-
 section.sec{padding:88px 0}.sec.alt{background:var(--alt)}
 .head{max-width:620px;margin-bottom:48px}
 .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,225px));gap:16px;justify-content:center}
+.lb img,.pdimg img,.pimg img{pointer-events:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-user-drag:none}
+.lb,.pdimg,.pimg{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+@media print{.lb,.pdimg,.pimg img{display:none!important}}
 .pimg{position:relative;overflow:hidden;margin-bottom:12px;background:#fff}
 .pimg img{width:100%;aspect-ratio:1/1;object-fit:contain;display:block}
 
@@ -475,7 +478,10 @@ return fetch("/api/telegram",{method:"POST",headers:{"Content-Type":"application
 .then(function(r){if(r.ok){out.className="okmsg";out.textContent=RevoI18n.T("Buyurtmangiz yuborildi. Tez orada bog‘lanamiz.");ph.value="";nm.value=""}else fb()})
 .catch(fb).then(function(){b.disabled=false;b.textContent=old})});
 document.querySelectorAll("img[data-use]").forEach(function(i){var s=document.querySelector('.pc img[data-k="'+i.dataset.use+'"]');if(s)i.src=s.src});
-document.addEventListener("contextmenu",function(e){if(e.target.closest&&e.target.closest(".pimg"))e.preventDefault()});
+document.addEventListener("contextmenu",function(e){if(e.target.closest&&e.target.closest(".pimg,.pdimg,#lb,#pdi,.pdrel"))e.preventDefault()});
+document.addEventListener("keydown",function(e){if((e.ctrlKey||e.metaKey)&&(e.key==="s"||e.key==="S")&&document.querySelector("#lb.on,#product.on")&&!(window.RevoAdmin&&window.RevoAdmin.on&&window.RevoAdmin.on()))e.preventDefault()});
+document.addEventListener("selectstart",function(e){if(e.target.closest&&e.target.closest(".pimg,.pdimg,#lb figure img"))e.preventDefault()});
+document.addEventListener("copy",function(e){var t=e.target;if(t&&t.closest&&t.closest(".pimg,.pdimg"))e.preventDefault()});
 document.addEventListener("dragstart",function(e){if(e.target.tagName==="IMG")e.preventDefault()});
 function show(x){var h=typeof x==="string"?x:(location.hash||"").replace("#","");var pm=/^product-(\d+)$/.exec(h);if(pm&&PR[+pm[1]]){cur=+pm[1];h="product"}if(pages.indexOf(h)<0)h="home";
 pages.forEach(function(p){var el=document.getElementById(p);el.classList.toggle("on",p===h);if(p===h)document.title=RevoI18n.T(el.dataset.ot||el.dataset.t)});
