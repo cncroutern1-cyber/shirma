@@ -528,6 +528,9 @@ function setSess(j){sess=j?{access_token:j.access_token,refresh_token:j.refresh_
 function fresh(){if(!sess)return Promise.resolve(false);if(Date.now()<sess.exp)return Promise.resolve(true);return tokenReq({refresh_token:sess.refresh_token},"refresh_token").then(function(j){if(j&&j.neterr)j=null;setSess(j);return !!j})}
 function api(path,o){o=o||{};return fresh().then(function(ok){var h={apikey:SBK};if(ok&&sess)h.Authorization="Bearer "+sess.access_token;for(var k in (o.headers||{}))h[k]=o.headers[k];return fetch(SBU+path,{method:o.method||"GET",headers:h,body:o.body})})}
 function fmtPrice(n){return n>0?String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g," ")+" so‘m":"Narx kelishiladi"}
+var mcache={};
+function isWm(u){return !/^https?:/.test(u)||/\/wm-[^\/]*$/.test(u)}
+function marked(u){if(isWm(u))return Promise.resolve(u);return mcache[u]||(mcache[u]=fetch(u).then(function(r){if(!r.ok)throw 0;return r.blob()}).then(resizeBlob).then(function(b){return URL.createObjectURL(b)}).catch(function(){return u}))}
 function loadRows(){return api("/rest/v1/site_products?select=*&order=sort.asc").then(function(r){return r.ok?r.json():null}).then(function(j){if(!Array.isArray(j))return;loaded=true;rows=j;if(j.length||DB){DB=true;renderRows()}else DB=false}).catch(function(){})}
 function btn(t,fn,cls){var b=el("button",cls||null,t);b.type="button";b.addEventListener("click",fn);return b}
 function renderRows(){
@@ -536,7 +539,7 @@ function renderRows(){
   RevoI18n.add(r.name_uz,r.name_ru,r.name_en);RevoI18n.add(r.desc_uz,r.desc_ru,r.desc_en);
   var p={i:i,id:r.id,src:r.image_url,name:r.name_uz,desc:r.desc_uz||"",price:fmtPrice(+r.price),pr:+r.price>0,row:r};
   var c=el("article","pc");c.setAttribute("data-aos","fade-up");c.setAttribute("data-aos-delay",(i%4)*90);
-  var pi=el("div","pimg"),im=el("img");im.crossOrigin="anonymous";im.src=p.src;im.alt=p.name;im.loading="lazy";pi.appendChild(im);c.appendChild(pi);
+  var pi=el("div","pimg"),im=el("img");im.crossOrigin="anonymous";if(isWm(p.src))im.src=p.src;else marked(p.src).then(function(u){im.src=u;p.src=u});im.alt=p.name;im.loading="lazy";pi.appendChild(im);c.appendChild(pi);
   c.appendChild(el("h3",null,p.name));if(p.desc)c.appendChild(el("p",null,p.desc));
   var pe=el("div","price");pe.appendChild(document.createTextNode(p.price+" "));if(p.pr)pe.appendChild(el("small",null,"namunaviy narx"));c.appendChild(pe);
   var a=el("a","btn sm","Buyurtma");a.href="#product-"+i;c.appendChild(a);
