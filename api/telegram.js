@@ -112,5 +112,11 @@ async function sendTelegram(token, chat, caption, image) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ chat_id: chat, text: caption, disable_web_page_preview: true }),
   });
-  return r2.ok ? true : "telegram: " + r2.status + " " + (await r2.text()).slice(0, 200) + (photoErr ? " / " + photoErr : "");
+  if (r2.ok) return true;
+  let who = "";
+  try {
+    const me = await (await fetch(api("getMe"))).json();
+    who = me && me.result ? " [bot=@" + me.result.username + " chat=" + chat + "]" : "";
+  } catch (e) {}
+  return "telegram: " + r2.status + " " + (await r2.text()).slice(0, 200) + who + (photoErr ? " / " + photoErr : "");
 }
