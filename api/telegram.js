@@ -56,9 +56,11 @@ export default async function handler(req, res) {
   const jobs = [];
   if (useMail) jobs.push(sendMail(mailKey, subject, text, image, phone));
   if (useTg) jobs.push(sendTelegram(tgToken, tgChat, text.slice(0, 1000), image));
-  const results = await Promise.all(jobs.map((p) => p.catch(() => false)));
-  if (results.some(Boolean)) return res.status(200).json({ ok: true });
-  return res.status(502).json({ ok: false, error: "delivery" });
+  const results = await Promise.all(jobs.map((p) => p.catch((e) => "network: " + (e && e.message))));
+  if (results.some((x) => x === true)) return res.status(200).json({ ok: true });
+  const detail = results.filter((x) => typeof x === "string");
+  console.error("delivery failed:", detail.join(" | "));
+  return res.status(502).json({ ok: false, error: "delivery", detail });
 }
 
 async function sendMail(key, subject, text, image, phone) {
@@ -82,11 +84,12 @@ async function sendMail(key, subject, text, image, phone) {
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  return r.ok;
+  return r.ok ? true : "email: " + r.status + " " + (await r.text()).slice(0, 200);
 }
 
 async function sendTelegram(token, chat, caption, image) {
   const api = (m) => `https://api.telegram.org/bot${token}/${m}`;
+  let photoErr = "";
   if (image) {
     const fd = new FormData();
     fd.append("chat_id", chat);
@@ -94,11 +97,12 @@ async function sendTelegram(token, chat, caption, image) {
     fd.append("photo", new Blob([Buffer.from(image.b64, "base64")], { type: image.type }), "product." + image.ext);
     const r = await fetch(api("sendPhoto"), { method: "POST", body: fd });
     if (r.ok) return true;
+    photoErr = "photo: " + r.status + " " + (await r.text()).slice(0, 200);
   }
   const r2 = await fetch(api("sendMessage"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ chat_id: chat, text: caption, disable_web_page_preview: true }),
   });
-  return r2.ok;
+  return r2.ok ? true : "telegram: " + r2.status + " " + (await r2.text()).slice(0, 200) + (photoErr ? " / " + photoErr : "");
 }
